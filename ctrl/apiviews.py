@@ -1,7 +1,6 @@
 import hmac
 import json
 
-from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
