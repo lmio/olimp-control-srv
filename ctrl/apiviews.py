@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import CheckIn, Computer
+from .models import CheckIn, Computer, UnknownComputer
 
 
 X_LMIO_AUTH = "X-lmio-auth"
@@ -36,10 +36,14 @@ def ping(request):
         status = 400
         return _make_response(status, resp_body)
 
+    mid = body["mid"]
     try:
-        comp = Computer.objects.get(machine_id=body["mid"])
+        comp = Computer.objects.get(machine_id=mid)
     except Computer.DoesNotExist:
-        resp_body = f"Computer with machine_id {body['mid']} is not registered"
+        uc, created = UnknownComputer.objects.get_or_create(machine_id=mid)
+        if not created:
+            uc.save()
+        resp_body = f"Computer with machine_id {mid} is not registered"
         status = 404
         return _make_response(status, resp_body)
 
