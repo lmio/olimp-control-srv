@@ -8,7 +8,10 @@
     {% if computers %}
         <ul>
         {% for computer in computers %}
-            <li><a href="{% url 'ctrl.computer' computer.machine_id %}">{{computer.name}}</a></li>
+            <li{{ computer.rooted|yesno:' class="rooted",,'|safe }}>
+                <a href="{% url 'ctrl.computer' computer.machine_id %}">{{computer.name}}</a>
+                <span>{{computer.most_recent_checkin.uptime}}</span>
+            </li>
         {% endfor %}
         </ul>
     {% else %}

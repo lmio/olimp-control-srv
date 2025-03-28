@@ -11,7 +11,7 @@
         {% if checkins %}
             <ul>
             {% for c in checkins %}
-                <li>{{c.timestamp}}</li>
+                <li><span>{{c.timestamp}}</span><span>{{c.uptime}}</span>
             {% endfor %}
             </ul>
         {% else %}
