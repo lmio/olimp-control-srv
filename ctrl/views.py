@@ -1,7 +1,7 @@
-from django.shortcuts import render
-from django.http import HttpResponse, Http404
+from django.shortcuts import get_object_or_404, render
+from django.http import HttpResponse
 
-from .models import Computer
+from .models import CheckIn, Computer
 
 
 def index(request):
@@ -13,12 +13,11 @@ def index(request):
 
 
 def computer(request, machine_id):
-    try:
-        computer = Computer.objects.get(machine_id=machine_id)
-    except Computer.DoesNotExist:
-        raise Http404("Computer does not exist")
+    computer = get_object_or_404(Computer, machine_id=machine_id)
+    checkins = computer.checkin_set.order_by("-timestamp")[:10]
 
     context = {
         "computer": computer,
+        "checkins": checkins,
     }
     return HttpResponse(render(request, "ctrl/computer.html", context))

@@ -8,7 +8,7 @@
     {% if computers %}
         <ul>
         {% for computer in computers %}
-            <li><a href="{% url 'ctrl.computer' machine_id=computer.machine_id %}">{{computer.name}}</a></li>
+            <li><a href="{% url 'ctrl.computer' computer.machine_id %}">{{computer.name}}</a></li>
         {% endfor %}
         </ul>
     {% else %}

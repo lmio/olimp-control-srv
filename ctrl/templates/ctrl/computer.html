@@ -7,5 +7,15 @@
     <body>
         <p>{{ computer.name }}</p>
         <p>{{ computer.machine_id }}</p>
+        <p>checkinai:</p>
+        {% if checkins %}
+            <ul>
+            {% for c in checkins %}
+                <li>{{c.timestamp}}</li>
+            {% endfor %}
+            </ul>
+        {% else %}
+        <p>nera</p>
+        {% endif %}
     </body>
 </html>
