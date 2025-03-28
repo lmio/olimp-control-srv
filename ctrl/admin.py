@@ -13,6 +13,8 @@ class UnknownComputerAdmin(admin.ModelAdmin):
 admin.site.register(
     (
         models.Computer,
+        models.Task,
+        models.Ticket,
     )
 )
 admin.site.register(models.CheckIn, CheckInAdmin)

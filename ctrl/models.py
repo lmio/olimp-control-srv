@@ -55,12 +55,12 @@ class Ticket(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     computer = models.ForeignKey(Computer, on_delete=models.CASCADE)
     added = models.DateTimeField(auto_now_add=True)
-    fetched = models.DateTimeField(null=True)
-    completed = models.DateTimeField(null=True)
-    runtime = models.FloatField(null=True)
-    exit_code = models.IntegerField(null=True)
-    stdout = models.TextField(null=True)
-    stderr = models.TextField(null=True)
+    fetched = models.DateTimeField(null=True, blank=True)
+    completed = models.DateTimeField(null=True, blank=True)
+    runtime = models.FloatField(null=True, blank=True)
+    exit_code = models.IntegerField(null=True, blank=True)
+    stdout = models.TextField(blank=True, default="")
+    stderr = models.TextField(blank=True, default="")
 
     @property
     def is_new(self):
