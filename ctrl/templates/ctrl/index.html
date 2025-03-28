@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en-US">
+    <head>
+        <meta charset="utf-8" />
+        <title>LMIO CTRL</title>
+    </head>
+    <body>
+    {% if computers %}
+        <ul>
+        {% for computer in computers %}
+            <li><a href="{% url 'ctrl.computer' machine_id=computer.machine_id %}">{{computer.name}}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>No computers are defined</p>
+    {% endif %}
+    </body>
+</html>
