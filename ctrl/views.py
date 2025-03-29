@@ -1,9 +1,11 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponse
 
 from .models import CheckIn, Computer
 
 
+@login_required
 def index(request):
     computers = Computer.objects.order_by("name")
     context = {
@@ -12,6 +14,7 @@ def index(request):
     return HttpResponse(render(request, "ctrl/index.html", context))
 
 
+@login_required
 def computer(request, machine_id):
     computer = get_object_or_404(Computer, machine_id=machine_id)
     checkins = computer.checkin_set.order_by("-timestamp")[:10]
