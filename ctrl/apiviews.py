@@ -89,7 +89,7 @@ def ticket(request):
             resp_body = json.dumps({
                 "timestamp": body["timestamp"],
                 "status": 200,
-                "message": "Ticket",
+                "message": f"Ticket {next_ticket.pk}",
                 "tid": next_ticket.pk,
                 "cmd": next_ticket.task.payload,
                 "runAs": next_ticket.task.run_as,
