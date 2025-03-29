@@ -78,6 +78,46 @@ def _process_next_ticket(body, comp):
         return _make_response(status, resp_body)
 
 
+def _process_ticket_results(body, comp):
+    tid = body.get("tid")
+    if not tid:
+        resp_body = "No ticket id provided"
+        status = 400
+        return _make_response(status, resp_body)
+
+    next_ticket = comp.ticket_set.filter(completed=None).order_by("added")[:1]
+    if not next_ticket:
+        resp_body = "Posting results but no tickets available"
+        status = 400
+        return _make_response(status, resp_body)
+
+    next_ticket = next_ticket[0]
+    if next_ticket.pk != tid:
+        resp_body = "Posting results for unexpected ticket"
+        status = 400
+        return _make_response(status, resp_body)
+
+    if not next_ticket.fetched:
+        resp_body = "Posting results for ticket not fetched"
+        status = 400
+        return _make_response(status, resp_body)
+
+    next_ticket.completed = timezone.now()
+    next_ticket.runtime = body.get("exectime")
+    next_ticket.exit_code = body.get("exitcode")
+    next_ticket.stdout = body.get("stdout")
+    next_ticket.stderr = body.get("stderr")
+    next_ticket.save()
+
+    resp_body = json.dumps({
+        "timestamp": body["timestamp"],
+        "status": 200,
+        "message": "Results accepted",
+    })
+    status = 200
+    return _make_response(status, resp_body)
+
+
 @csrf_exempt
 def ping(request):
     data = _process_request_basics(request)
@@ -110,8 +150,8 @@ def ticket(request):
     if request.method == "GET":
         return _process_next_ticket(body, comp)
     elif request.method == "POST":
-        pass
+        return _process_ticket_results(body, comp)
     else:
-        resp_body = f"Invalid request method"
+        resp_body = "Invalid request method"
         status = 400
         return _make_response(status, resp_body)
