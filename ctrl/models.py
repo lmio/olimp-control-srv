@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Computer(models.Model):
-    machine_id = models.CharField(max_length=40)
+    machine_id = models.CharField(max_length=40, db_index=True)
     name = models.CharField(max_length=32)
 
     @property
