@@ -2,6 +2,7 @@ import hmac
 import json
 
 from django.http import HttpResponse
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import CheckIn, Computer, UnknownComputer
@@ -17,8 +18,7 @@ def _make_response(status_code, body, hmac_key=AUTH_KEY):
     return resp
 
 
-@csrf_exempt
-def ping(request):
+def _process_request_basics(request):
     req_digest = hmac.HMAC(AUTH_KEY, request.body, "sha1").hexdigest()
     auth = request.headers.get(X_LMIO_AUTH)
     is_good = hmac.compare_digest(auth, req_digest)
@@ -46,12 +46,70 @@ def ping(request):
         status = 404
         return _make_response(status, resp_body)
 
+    return (body, comp)
+
+
+@csrf_exempt
+def ping(request):
+    data = _process_request_basics(request)
+    if isinstance(data, HttpResponse):
+        return data
+    body, comp = data
+
     checkin = CheckIn(computer=comp,
                       pseudo_timestamp=body["timestamp"],
                       uptime=body["uptime"],
                       has_root=body["hasRoot"])
     checkin.save()
 
-    resp_body = json.dumps({"timestamp": body["timestamp"], "status": "200", "message": "OK"})
+    resp_body = json.dumps({
+        "timestamp": body["timestamp"],
+        "status": 200,
+        "message": "OK",
+    })
     status = 200
     return _make_response(status, resp_body)
+
+
+@csrf_exempt
+def ticket(request):
+    data = _process_request_basics(request)
+    if isinstance(data, HttpResponse):
+        return data
+    body, comp = data
+
+    if request.method == "GET":
+        next_ticket = comp.ticket_set.filter(completed=None).order_by("added")[:1]
+        if next_ticket:
+            next_ticket = next_ticket[0]
+            if not next_ticket.fetched:
+                next_ticket.fetched = timezone.now()
+                next_ticket.save()
+
+            resp_body = json.dumps({
+                "timestamp": body["timestamp"],
+                "status": 200,
+                "message": "Ticket",
+                "tid": next_ticket.pk,
+                "cmd": next_ticket.task.payload,
+                "runAs": next_ticket.task.run_as,
+            })
+            status = 200
+            return _make_response(status, resp_body)
+
+        else:
+            resp_body = json.dumps({
+                "timestamp": body["timestamp"],
+                "status": 404,
+                "message": "No tickets available",
+            })
+            status = 404
+            return _make_response(status, resp_body)
+
+    elif request.method == "POST":
+        pass
+
+    else:
+        resp_body = f"Invalid request method"
+        status = 400
+        return _make_response(status, resp_body)
