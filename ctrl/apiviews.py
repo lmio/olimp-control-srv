@@ -49,6 +49,35 @@ def _process_request_basics(request):
     return (body, comp)
 
 
+def _process_next_ticket(body, comp):
+    next_ticket = comp.ticket_set.filter(completed=None).order_by("added")[:1]
+    if next_ticket:
+        next_ticket = next_ticket[0]
+        if not next_ticket.fetched:
+            next_ticket.fetched = timezone.now()
+            next_ticket.save()
+
+        resp_body = json.dumps({
+            "timestamp": body["timestamp"],
+            "status": 200,
+            "message": f"Ticket {next_ticket.pk}",
+            "tid": next_ticket.pk,
+            "cmd": next_ticket.task.payload,
+            "runAs": next_ticket.task.run_as,
+        })
+        status = 200
+        return _make_response(status, resp_body)
+
+    else:
+        resp_body = json.dumps({
+            "timestamp": body["timestamp"],
+            "status": 404,
+            "message": "No tickets available",
+        })
+        status = 404
+        return _make_response(status, resp_body)
+
+
 @csrf_exempt
 def ping(request):
     data = _process_request_basics(request)
@@ -79,36 +108,9 @@ def ticket(request):
     body, comp = data
 
     if request.method == "GET":
-        next_ticket = comp.ticket_set.filter(completed=None).order_by("added")[:1]
-        if next_ticket:
-            next_ticket = next_ticket[0]
-            if not next_ticket.fetched:
-                next_ticket.fetched = timezone.now()
-                next_ticket.save()
-
-            resp_body = json.dumps({
-                "timestamp": body["timestamp"],
-                "status": 200,
-                "message": f"Ticket {next_ticket.pk}",
-                "tid": next_ticket.pk,
-                "cmd": next_ticket.task.payload,
-                "runAs": next_ticket.task.run_as,
-            })
-            status = 200
-            return _make_response(status, resp_body)
-
-        else:
-            resp_body = json.dumps({
-                "timestamp": body["timestamp"],
-                "status": 404,
-                "message": "No tickets available",
-            })
-            status = 404
-            return _make_response(status, resp_body)
-
+        return _process_next_ticket(body, comp)
     elif request.method == "POST":
         pass
-
     else:
         resp_body = f"Invalid request method"
         status = 400
