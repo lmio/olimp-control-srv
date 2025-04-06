@@ -1,21 +1,16 @@
-<!DOCTYPE html>
-<html lang="en-US">
-    <head>
-        <meta charset="utf-8" />
-        <title>LMIO CTRL</title>
-    </head>
-    <body>
-    {% if computers %}
-        <ul>
-        {% for computer in computers %}
-            <li{{ computer.rooted|yesno:' class="rooted",,'|safe }}>
-                <a href="{% url 'ctrl.computer' computer.machine_id %}">{{computer.name}}</a>
-                <span>{{computer.most_recent_checkin.uptime}}</span>
-            </li>
-        {% endfor %}
-        </ul>
-    {% else %}
-        <p>No computers are defined</p>
-    {% endif %}
-    </body>
-</html>
+{% extends "ctrl/base.html" %}
+
+{% block content %}
+{% if computers %}
+    <ul>
+    {% for computer in computers %}
+        <li{{ computer.rooted|yesno:' class="rooted",,'|safe }}>
+            <a href="{% url 'ctrl.computer' computer.machine_id %}">{{ computer.name }}</a>
+            <span>{{ computer.most_recent_checkin.uptime }}</span>
+        </li>
+    {% endfor %}
+    </ul>
+{% else %}
+    <p>No computers are defined</p>
+{% endif %}
+{% endblock %}

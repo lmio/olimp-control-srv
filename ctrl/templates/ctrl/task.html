@@ -1,11 +1,7 @@
-<!DOCTYPE html>
-<html lang="en-US">
-    <head>
-        <meta charset="utf-8" />
-        <title>LMIO CTRL</title>
-    </head>
-    <body>
-        {{task.name}}
-    </body>
-</html>
+{% extends "ctrl/base.html" %}
 
+{% block title %}Užduotis {{ task.pk }} - LMIO CTRL{% endblock %}
+
+{% block content %}
+{{ task.name }}
+{% endblock %}

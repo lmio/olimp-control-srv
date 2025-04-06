@@ -1,21 +1,18 @@
-<!DOCTYPE html>
-<html lang="en-US">
-    <head>
-        <meta charset="utf-8" />
-        <title>LMIO CTRL</title>
-    </head>
-    <body>
-        <p>{{ computer.name }}</p>
-        <p>{{ computer.machine_id }}</p>
-        <p>checkinai:</p>
-        {% if checkins %}
-            <ul>
-            {% for c in checkins %}
-                <li><span>{{c.timestamp}}</span><span>{{c.uptime}}</span>
-            {% endfor %}
-            </ul>
-        {% else %}
-        <p>nera</p>
-        {% endif %}
-    </body>
-</html>
+{% extends "ctrl/base.html" %}
+
+{% block title %}{{ computer.name }} - LMIO CTRL{% endblock %}
+
+{% block content %}
+<p>{{ computer.name }}</p>
+<p>{{ computer.machine_id }}</p>
+<p>checkinai:</p>
+{% if checkins %}
+    <ul>
+    {% for c in checkins %}
+        <li><span>{{ c.timestamp }}</span><span>{{ c.uptime }}</span>
+    {% endfor %}
+    </ul>
+{% else %}
+<p>nera</p>
+{% endif %}
+{% endblock %}

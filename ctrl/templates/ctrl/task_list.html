@@ -1,13 +1,9 @@
-<!DOCTYPE html>
-<html lang="en-US">
-    <head>
-        <meta charset="utf-8" />
-        <title>LMIO CTRL</title>
-    </head>
-    <body>
-        {% for t in task_list %}
-        {{ t.name }}
-        {% endfor %}
-    </body>
-</html>
+{% extends "ctrl/base.html" %}
 
+{% block title %}Užduotys - LMIO CTRL{% endblock %}
+
+{% block content %}
+{% for t in task_list %}
+{{ t.name }}
+{% endfor %}
+{% endblock %}
