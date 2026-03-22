@@ -18,6 +18,10 @@
             <a href="{% url 'admin:index' %}">Django admin</a>
             {% if user.is_authenticated %}
             <span class="nav-right">{{ user.username }}</span>
+            <form method="post" action="{% url 'admin:logout' %}">
+                {% csrf_token %}
+                <button class="link-button" type="submit">Atsijungti</button>
+            </form>
             {% endif %}
         </nav>
         <div class="container">

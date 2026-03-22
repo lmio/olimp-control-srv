@@ -53,17 +53,24 @@ nav .brand {
     margin-right: 24px;
     letter-spacing: 0.5px;
 }
-nav a {
+nav a,
+nav .link-button {
     color: var(--color-nav-text);
     padding: 6px 12px;
     border-radius: var(--radius);
     font-size: 13px;
     transition: background 0.15s, color 0.15s;
 }
-nav a:hover {
+nav a:hover,
+nav .link-button:hover {
     background: rgba(255,255,255,0.1);
     color: var(--color-nav-hover);
     text-decoration: none;
+}
+nav .link-button {
+    background: none;
+    border: none;
+    cursor: pointer;
 }
 nav .nav-right {
     margin-left: auto;
