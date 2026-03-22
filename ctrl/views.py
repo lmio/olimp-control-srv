@@ -174,6 +174,20 @@ def task(request, pk):
     return render(request, "ctrl/task.html", context)
 
 
+def _render_create_task_html(request, form):
+    computers_by_location = {}
+    for c in form.fields["computers"].queryset.select_related("location"):
+        loc_name = c.location.name if c.location else "Unassigned"
+        computers_by_location.setdefault(loc_name, []).append(c)
+
+    task_presets = TaskPreset.objects.all()
+    return render(request, "ctrl/create_task.html", {
+        "form": form,
+        "computers_by_location": computers_by_location,
+        "task_presets": task_presets,
+    })
+
+
 @login_required
 def create_task(request):
     if request.method == "POST":
@@ -191,19 +205,21 @@ def create_task(request):
     else:
         form = NewTaskForm()
 
-    computers_by_location = {}
-    for c in form.fields["computers"].queryset.select_related("location"):
-        loc_name = c.location.name if c.location else "Unassigned"
-        computers_by_location.setdefault(loc_name, []).append(c)
+    return _render_create_task_html(request, form)
 
-    task_presets = TaskPreset.objects.all()
 
-    return render(request, "ctrl/create_task.html", {
-        "form": form,
-        "computers_by_location": computers_by_location,
-        "task_presets": task_presets,
+@login_required
+def clone_task(request, pk):
+    old_task = get_object_or_404(Task, pk=pk)
+    old_task_computers = [c.computer for c in old_task.ticket_set.prefetch_related('computer').all()]
+    form = NewTaskForm(initial={
+        'name': f'{old_task.name} (kopija)',
+        'run_as': old_task.run_as,
+        'payload': old_task.payload,
+        'computers': old_task_computers,
     })
 
+    return _render_create_task_html(request, form)
 
 @login_required
 def unknown_computers(request):

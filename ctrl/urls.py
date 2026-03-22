@@ -13,6 +13,7 @@ urlpatterns = [
     path("task_list/", views.TaskListView.as_view(), name="ctrl.task_list"),
     path("task/<int:pk>/", views.task, name="ctrl.task"),
     path("create-task/", views.create_task, name="ctrl.create_task"),
+    path("clone-task/<int:pk>", views.clone_task, name="ctrl.clone_task"),
     path("ticket/<int:pk>/", views.TicketView.as_view(), name="ctrl.ticket"),
     path("unknown/", views.unknown_computers, name="ctrl.unknown_computers"),
     path("unknown/<int:pk>/register/", views.register_computer, name="ctrl.register_computer"),
