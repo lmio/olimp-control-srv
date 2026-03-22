@@ -11,9 +11,9 @@
 <table>
     <thead>
         <tr>
-            <th>Machine ID</th>
-            <th>Pirmas pingas</th>
-            <th>Paskutinis pingas</th>
+            <th><a href="?sort={% if sort == 'mid' %}-mid{% else %}mid{% endif %}">Machine ID {% if sort == 'mid' %}▲{% elif sort == '-mid' %}▼{% endif %}</a></th>
+            <th><a href="?sort={% if sort == 'first' %}-first{% else %}first{% endif %}">Pirmas pingas {% if sort == 'first' %}▲{% elif sort == '-first' %}▼{% endif %}</a></th>
+            <th><a href="?sort={% if sort == '-last' %}last{% else %}-last{% endif %}">Paskutinis pingas {% if sort == 'last' %}▲{% elif sort == '-last' %}▼{% endif %}</a></th>
             <th></th>
         </tr>
     </thead>

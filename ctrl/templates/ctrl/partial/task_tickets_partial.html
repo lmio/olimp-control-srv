@@ -1,0 +1,50 @@
+<div class="summary-bar mb-16">
+    <span class="badge badge-new">Nauji: {{ task.new_count }}</span>
+    <span class="badge badge-in-progress">Vykdomi: {{ task.in_progress_count }}</span>
+    <span class="badge badge-completed">Įvykdyti: {{ task.completed_count }}</span>
+    <span class="badge badge-error">Su klaidom: {{ task.error_count }}</span>
+    <span class="last-updated" id="last-updated"></span>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Kompiuteris</th>
+            <th>Vieta</th>
+            <th>Statusas</th>
+            <th>Pabaigos kodas</th>
+            <th>Vykdymo laikas</th>
+            <th>Stdout</th>
+            <th>Stderr</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for ticket in tickets %}
+        <tr>
+            <td><a href="{% url 'ctrl.ticket' ticket.pk %}">#{{ ticket.pk }}</a></td>
+            <td><a href="{% url 'ctrl.computer' ticket.computer.machine_id %}">{{ ticket.computer.name }}</a></td>
+            <td>{{ ticket.computer.location.name|default:"—" }}</td>
+            <td>
+                {% if ticket.is_new %}
+                <span class="badge badge-new">naujas</span>
+                {% elif ticket.is_in_progress %}
+                <span class="badge badge-in-progress">vykdomas</span>
+                {% elif ticket.is_completed %}
+                    {% if ticket.exit_code == 0 %}
+                    <span class="badge badge-completed">įvykdytas</span>
+                    {% else %}
+                    <span class="badge badge-error">klaida</span>
+                    {% endif %}
+                {% endif %}
+            </td>
+            <td>{% if ticket.is_completed %}{{ ticket.exit_code }}{% else %}—{% endif %}</td>
+            <td>{% if ticket.is_completed %}{{ ticket.runtime_rounded }}{% else %}—{% endif %}</td>
+            <td>{% if ticket.stdout %}<code class="output-preview">{{ ticket.stdout|truncatewords:12 }}</code>{% else %}—{% endif %}</td>
+            <td>{% if ticket.stderr %}<code class="output-preview output-stderr">{{ ticket.stderr|truncatewords:12 }}</code>{% else %}—{% endif %}</td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="8" class="text-muted">Nėra bilietėlių</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
