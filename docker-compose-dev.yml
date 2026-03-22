@@ -6,6 +6,7 @@ services:
 
   ctrl: 
     environment:
+      CTRL_PRODUCTION:
       CTRL_DB_HOST: "db"
       CTRL_DB_PASSWORD: "test123"
 

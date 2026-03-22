@@ -21,13 +21,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_SECRET_KEY = 'django-insecure-3pm&fv1w3u5m)ogno056o8=@!(qmk*+x4rcv=_%7pykcfd4wx9'
 
 # Environment variables
-CTRL_SECRET_KEY = os.environ.get("CTRL_SECRET_KEY", default=DEFAULT_SECRET_KEY)
 CTRL_PRODUCTION = not not os.environ.get("CTRL_PRODUCTION")
+
+
+def get_env_or_crash_in_prod(key, default_in_dev=""):
+    value = os.environ.get(key)
+    if value:
+        return value
+    if not CTRL_PRODUCTION:
+        return default_in_dev
+    raise KeyError(f'Expected environment variable `{key}` to be set in production')
+
+
+CTRL_SECRET_KEY = get_env_or_crash_in_prod("CTRL_SECRET_KEY", default_in_dev=DEFAULT_SECRET_KEY)
 CTRL_STATIC_ROOT = os.environ.get("CTRL_STATIC_ROOT")
-CTRL_DB_HOST = os.environ.get("CTRL_DB_HOST")
+CTRL_DB_HOST = get_env_or_crash_in_prod("CTRL_DB_HOST")
 CTRL_DB_PORT = os.environ.get("CTRL_DB_PORT", default="5432")
 CTRL_DB_USER = os.environ.get("CTRL_DB_USER", default="postgres")
-CTRL_DB_PASSWORD = os.environ.get("CTRL_DB_PASSWORD")
+CTRL_DB_PASSWORD = get_env_or_crash_in_prod("CTRL_DB_PASSWORD")
 CTRL_DB_NAME = os.environ.get("CTRL_DB_NAME", default="postgres")
 
 DEBUG = not CTRL_PRODUCTION
@@ -82,7 +93,7 @@ WSGI_APPLICATION = 'ctrl_srv.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if CTRL_PRODUCTION:
+if CTRL_DB_HOST:
     DATABASES = {
         'default': {
             "ENGINE": "django.db.backends.postgresql",
@@ -93,13 +104,15 @@ if CTRL_PRODUCTION:
             "NAME": CTRL_DB_NAME,
         }
     }
-else:
+elif not CTRL_PRODUCTION:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+else:
+    raise ValueError('Refusing to run sqlite in production; set CTRL_DB_HOST env variable')
 
 
 # Password validation
