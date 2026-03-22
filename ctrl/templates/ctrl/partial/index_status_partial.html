@@ -1,6 +1,7 @@
 <div class="summary-bar">
     <span class="stat">Prisijungę: <span class="stat-online">{{ online_count }}</span> / {{ total_count }}</span>
     <span class="stat">Neprisijungę: <span class="stat-offline">{{ offline_count }}</span></span>
+    <span class="stat"><a href="{% url 'ctrl.unknown_computers' %}">Nežinomi: {{ unknown_count }}</a></span>
     <span class="last-updated" id="last-updated"></span>
 </div>
 

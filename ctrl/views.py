@@ -41,12 +41,15 @@ def _get_status_context():
     online_count = sum(1 for c in all_computers if c.is_online)
     total_count = len(all_computers)
 
+    unknown_count = UnknownComputer.objects.count()
+
     return {
         "locations": locations,
         "unassigned_computers": unassigned_computers,
         "online_count": online_count,
         "offline_count": total_count - online_count,
         "total_count": total_count,
+        "unknown_count": unknown_count,
     }
 
 
@@ -163,15 +166,20 @@ def computer(request, machine_id):
     return render(request, "ctrl/computer.html", context)
 
 
-@login_required
-def task(request, pk):
+def _get_task_context(pk):
     task = get_object_or_404(Task.objects.with_ticket_status_counts(), pk=pk)
     tickets = task.ticket_set.select_related("computer", "computer__location").order_by("-pk")
-    context = {
-        "task": task,
-        "tickets": tickets,
-    }
-    return render(request, "ctrl/task.html", context)
+    return {"task": task, "tickets": tickets}
+
+
+@login_required
+def task(request, pk):
+    return render(request, "ctrl/task.html", _get_task_context(pk))
+
+
+@login_required
+def task_partial(request, pk):
+    return render(request, "ctrl/partial/task_tickets_partial.html", _get_task_context(pk))
 
 
 def _render_create_task_html(request, form):
@@ -203,28 +211,38 @@ def create_task(request):
                 Ticket.objects.bulk_create(tickets)
             return redirect("ctrl.task", pk=task.pk)
     else:
-        form = NewTaskForm()
-
-    return _render_create_task_html(request, form)
-
-
-@login_required
-def clone_task(request, pk):
-    old_task = get_object_or_404(Task, pk=pk)
-    old_task_computers = [c.computer for c in old_task.ticket_set.prefetch_related('computer').all()]
-    form = NewTaskForm(initial={
-        'name': f'{old_task.name} (kopija)',
-        'run_as': old_task.run_as,
-        'payload': old_task.payload,
-        'computers': old_task_computers,
-    })
+        clone_pk = request.GET.get("clone")
+        if clone_pk:
+            old_task = get_object_or_404(Task, pk=clone_pk)
+            old_computers = [t.computer for t in old_task.ticket_set.select_related("computer").all()]
+            form = NewTaskForm(initial={
+                "name": f"{old_task.name} (kopija)",
+                "run_as": old_task.run_as,
+                "payload": old_task.payload,
+                "computers": old_computers,
+            })
+        else:
+            form = NewTaskForm()
 
     return _render_create_task_html(request, form)
 
 @login_required
 def unknown_computers(request):
-    computers = UnknownComputer.objects.order_by("-last_seen")[:100]
-    return render(request, "ctrl/unknown_computers.html", {"computers": computers})
+    allowed_sort = {
+        "mid": "machine_id",
+        "first": "first_seen",
+        "last": "last_seen",
+        "-mid": "-machine_id",
+        "-first": "-first_seen",
+        "-last": "-last_seen",
+    }
+    sort = request.GET.get("sort", "-last")
+    order_by = allowed_sort.get(sort, "-last_seen")
+    computers = UnknownComputer.objects.order_by(order_by)[:100]
+    return render(request, "ctrl/unknown_computers.html", {
+        "computers": computers,
+        "sort": sort,
+    })
 
 
 @login_required

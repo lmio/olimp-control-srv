@@ -8,8 +8,9 @@ function timeAgo(isoStr) {
 }
 
 function cleanUptime(str) {
-    var m = str.match(/up\s+(\d+[:\s]\d+|\d+\s+days?)/i);
-    return m ? m[1].trim() : str.trim();
+    // Matches: "up 3 days, 2:30", "up 2:30", "up 45 min"
+    var m = str.match(/up\s+([\d\s:,]+(?:days?|min)?)/i);
+    return m ? m[1].replace(/,\s*$/, '').trim() : str.trim();
 }
 
 function updateElapsed() {

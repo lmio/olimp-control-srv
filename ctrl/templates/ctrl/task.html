@@ -5,7 +5,7 @@
 {% block content %}
 <div class="page-header">
     <h1>Užduotis: {{ task.name }}</h1>
-    <a class="btn btn-primary" href="{% url 'ctrl.clone_task' task.pk %}">Klonuoti</a>
+    <a class="btn btn-primary" href="{% url 'ctrl.create_task' %}?clone={{ task.pk }}">Klonuoti</a>
 </div>
 
 <div class="info-card">
@@ -23,49 +23,14 @@
 <pre>{{ task.payload }}</pre>
 
 <div class="section-title">Bilietėliai</div>
-<div class="summary-bar mb-16">
-    <span class="badge badge-new">Nauji: {{ task.new_count }}</span>
-    <span class="badge badge-in-progress">Vykdomi: {{ task.in_progress_count }}</span>
-    <span class="badge badge-completed">Įvykdyti: {{ task.completed_count }}</span>
-    <span class="badge badge-error">Su klaidom: {{ task.error_count }}</span>
+<div class="connection-lost" id="connection-lost">Ryšys nutrūko</div>
+<div id="task-tickets">
+    {% include "ctrl/partial/task_tickets_partial.html" %}
 </div>
+{% endblock %}
 
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Kompiuteris</th>
-            <th>Vieta</th>
-            <th>Statusas</th>
-            <th>Pabaigos kodas</th>
-            <th>Vykdymo laikas</th>
-        </tr>
-    </thead>
-    <tbody>
-    {% for ticket in tickets %}
-        <tr>
-            <td><a href="{% url 'ctrl.ticket' ticket.pk %}">#{{ ticket.pk }}</a></td>
-            <td><a href="{% url 'ctrl.computer' ticket.computer.machine_id %}">{{ ticket.computer.name }}</a></td>
-            <td>{{ ticket.computer.location.name|default:"—" }}</td>
-            <td>
-                {% if ticket.is_new %}
-                <span class="badge badge-new">naujas</span>
-                {% elif ticket.is_in_progress %}
-                <span class="badge badge-in-progress">vykdomas</span>
-                {% elif ticket.is_completed %}
-                    {% if ticket.exit_code == 0 %}
-                    <span class="badge badge-completed">įvykdytas</span>
-                    {% else %}
-                    <span class="badge badge-error">klaida</span>
-                    {% endif %}
-                {% endif %}
-            </td>
-            <td>{% if ticket.is_completed %}{{ ticket.exit_code }}{% else %}—{% endif %}</td>
-            <td>{% if ticket.is_completed %}{{ ticket.runtime_rounded }}{% else %}—{% endif %}</td>
-        </tr>
-    {% empty %}
-        <tr><td colspan="6" class="text-muted">Nėra bilietėlių</td></tr>
-    {% endfor %}
-    </tbody>
-</table>
+{% block scripts %}
+<script>
+startAutoRefresh('{% url "ctrl.task_partial" task.pk %}', 'task-tickets', 'connection-lost');
+</script>
 {% endblock %}

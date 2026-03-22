@@ -6,7 +6,7 @@
 <div class="page-header">
     <h1>Nauja užduotis</h1>
 </div>
-<form method="post">
+<form method="post" action="{% url 'ctrl.create_task' %}">
     {% csrf_token %}
     <div class="form-group">
         <label for="id_name">Pavadinimas</label>
