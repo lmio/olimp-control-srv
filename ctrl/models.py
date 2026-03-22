@@ -2,8 +2,7 @@ from django.db import models
 from django.db.models import Count, Q, When, Case, Value, BooleanField, Subquery, OuterRef
 from django.db.models.functions import Now
 from django.contrib.auth.models import User
-from django.utils import timezone
-from datetime import timedelta
+from constance import config
 
 
 class Location(models.Model):
@@ -35,7 +34,7 @@ class ComputerQuerySet(models.QuerySet):
         )
 
     def with_online_status(self):
-        threshold = Now() - timedelta(seconds=5)
+        threshold = Now() - config.MACHINE_OFFLINE_THRESHOLD
         return (
             self.with_last_checkin()
             .annotate(
