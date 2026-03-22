@@ -38,7 +38,7 @@
                 {% for c in computers %}
                 <label>
                     <input type="checkbox" name="computers" value="{{ c.pk }}"
-                        {% if c.pk|stringformat:"d" in form.computers.value %}checked{% endif %}>
+                        {% if c.pk in form.computers.value %}checked{% endif %}>
                     {{ c.name }}
                 </label>
                 {% endfor %}
