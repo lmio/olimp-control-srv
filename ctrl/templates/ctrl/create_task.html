@@ -47,6 +47,18 @@
         {% endfor %}
     </div>
     <div class="form-group">
+        <h4>Šablonai</h4>
+        {% for task_preset in task_presets %}
+        <button
+            type="button"
+            class="btn btn-primary preset-btn"
+            data-payload="{{ task_preset.payload|escape }}"
+        >
+            {{ task_preset.name }}
+        </button>
+        {% endfor %}
+    </div>
+    <div class="form-group">
         <label for="id_payload">Kodas</label>
         <textarea name="payload" id="id_payload" class="mono" rows="15" cols="80">{{ form.payload.value|default:"" }}</textarea>
         {% if form.payload.errors %}
@@ -69,5 +81,11 @@ function toggleGroup(btn, checked) {
         cb.checked = checked;
     });
 }
+document.querySelectorAll('.preset-btn').forEach(function(button) {
+    button.addEventListener('click', function() {
+        const payload = this.dataset.payload;
+        document.getElementById('id_payload').value = payload;
+    });
+});
 </script>
 {% endblock %}

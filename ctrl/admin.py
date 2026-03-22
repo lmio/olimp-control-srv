@@ -16,6 +16,7 @@ admin.site.register(
         models.Computer,
         models.Task,
         models.Ticket,
+        models.TaskPreset,
     )
 )
 admin.site.register(models.CheckIn, CheckInAdmin)
