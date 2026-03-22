@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 
 import os
 from pathlib import Path
-from django.utils.log import DEFAULT_LOGGING
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +22,6 @@ DEFAULT_SECRET_KEY = 'django-insecure-3pm&fv1w3u5m)ogno056o8=@!(qmk*+x4rcv=_%7py
 # Environment variables
 CTRL_SECRET_KEY = os.environ.get("CTRL_SECRET_KEY", default=DEFAULT_SECRET_KEY)
 CTRL_PRODUCTION = not not os.environ.get("CTRL_PRODUCTION")
-CTRL_LOG_LEVEL = os.environ.get("CTRL_LOG_LEVEL", default="INFO")
 CTRL_STATIC_ROOT = os.environ.get("CTRL_STATIC_ROOT")
 CTRL_DB_HOST = os.environ.get("CTRL_DB_HOST")
 CTRL_DB_PORT = os.environ.get("CTRL_DB_PORT", default="5432")
@@ -120,14 +118,47 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LOGGING = DEFAULT_LOGGING
-LOGGING["handlers"]["console"]["level"] = CTRL_LOG_LEVEL
-LOGGING["loggers"].update({
-    "django.db.backends": {
-        "level": "DEBUG",
-        "handlers": ["console"],
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": {
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
     },
-})
+    "formatters": {
+        "django.server": {
+            "()": "django.utils.log.ServerFormatter",
+            "format": "[{server_time}] {message}",
+            "style": "{",
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+        },
+        "django.server": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "django.server",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+        },
+        "django.server": {
+            "handlers": ["django.server"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
