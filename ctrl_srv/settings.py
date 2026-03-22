@@ -34,6 +34,7 @@ def get_env_or_crash_in_prod(key, default_in_dev=""):
 
 
 CTRL_SECRET_KEY = get_env_or_crash_in_prod("CTRL_SECRET_KEY", default_in_dev=DEFAULT_SECRET_KEY)
+CTRL_AUTH_KEY = get_env_or_crash_in_prod("CTRL_AUTH_KEY", default_in_dev='abcde')
 CTRL_STATIC_ROOT = os.environ.get("CTRL_STATIC_ROOT")
 CTRL_DB_HOST = get_env_or_crash_in_prod("CTRL_DB_HOST")
 CTRL_DB_PORT = os.environ.get("CTRL_DB_PORT", default="5432")

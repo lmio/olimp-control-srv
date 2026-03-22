@@ -3,13 +3,14 @@ import json
 
 from django.http import HttpResponse
 from django.utils import timezone
+from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import CheckIn, Computer, UnknownComputer
 
 
 X_LMIO_AUTH = "X-lmio-auth"
-AUTH_KEY = "abcde".encode("utf-8")
+AUTH_KEY = settings.CTRL_AUTH_KEY.encode("utf-8")
 
 
 def _make_response(status_code, body, hmac_key=AUTH_KEY):
@@ -27,7 +28,7 @@ def _process_request_basics(request):
         resp_body = "Invalid authentication data"
         status = 403
         return _make_response(status, resp_body)
-    
+
     try:
         body = json.loads(request.body)
     except json.JSONDecodeError as e:
