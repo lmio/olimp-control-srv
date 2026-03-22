@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
-from .models import Location, Computer, UnknownComputer, Task, Ticket
+from .models import Location, Computer, UnknownComputer, Task, Ticket, TaskPreset
 from .forms import NewTaskForm, RegisterComputerForm
 
 
@@ -196,9 +196,12 @@ def create_task(request):
         loc_name = c.location.name if c.location else "Unassigned"
         computers_by_location.setdefault(loc_name, []).append(c)
 
+    task_presets = TaskPreset.objects.all()
+
     return render(request, "ctrl/create_task.html", {
         "form": form,
         "computers_by_location": computers_by_location,
+        "task_presets": task_presets,
     })
 
 

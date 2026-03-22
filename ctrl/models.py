@@ -147,3 +147,11 @@ class Ticket(models.Model):
 
     def __str__(self):
         return f"{self.task.pk} @ {self.computer.name}"
+
+
+class TaskPreset(models.Model):
+    name = models.TextField()
+    payload = models.TextField()
+
+    def __str__(self):
+        return self.name
