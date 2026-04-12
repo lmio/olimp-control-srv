@@ -38,6 +38,11 @@ class NewTaskForm(forms.ModelForm):
         required=True
     )
 
+    def clean_payload(self):
+        data = self.cleaned_data.get('payload', '')
+        normalized_data = data.replace('\r\n', '\n')
+        return normalized_data
+
     class Meta:
         model = Task
         fields = ['name', 'run_as', 'computers', 'payload']
