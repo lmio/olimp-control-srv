@@ -1,6 +1,6 @@
 from django import forms
 from django.forms.widgets import Textarea
-from .models import Computer, Location, Task
+from .models import Computer, Location, Student, Task
 
 
 class ComputerMultipleChoiceField(forms.ModelMultipleChoiceField):
@@ -54,4 +54,39 @@ class RegisterComputerForm(forms.Form):
         queryset=Location.objects.order_by("sequence_num"),
         required=False,
     )
+
+
+class StudentForm(forms.ModelForm):
+    location = forms.ModelChoiceField(
+        label="Klasė",
+        queryset=Location.objects.order_by("sequence_num"),
+        required=False,
+    )
+    computers = ComputerMultipleChoiceField(
+        label="Kompiuteriai",
+        queryset=Computer.objects.order_by(
+            "location__sequence_num",
+            "location__name",
+            "sequence_num",
+            "name"
+        ),
+        widget=forms.SelectMultiple,
+        required=False,
+    )
+
+    class Meta:
+        model = Student
+        fields = ["name", "cms_username", "location", "computers"]
+        labels = {"name": "Vardas Pavardė", "cms_username": "CMS naudotojas"}
+
+
+class LocationForm(forms.ModelForm):
+    class Meta:
+        model = Location
+        fields = ["name", "sequence_num", "grid_cols"]
+        labels = {
+            "name": "Pavadinimas",
+            "sequence_num": "Eilės nr.",
+            "grid_cols": "Tinklelio stulpeliai",
+        }
 

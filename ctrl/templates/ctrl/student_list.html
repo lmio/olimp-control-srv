@@ -1,0 +1,48 @@
+{% extends "ctrl/base.html" %}
+
+{% block title %}Mokiniai - LMIO CTRL{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mokiniai</h1>
+    <a href="{% url 'ctrl.student_new' %}" class="btn btn-primary">Naujas mokinys</a>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Vardas Pavardė</th>
+            <th>CMS naudotojas</th>
+            <th>Klasė</th>
+            <th>Kompiuteriai</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for s in students %}
+        <tr>
+            <td><a href="{% url 'ctrl.student_edit' s.pk %}">{{ s.name }}</a></td>
+            <td><code>{{ s.cms_username }}</code></td>
+            <td>
+                {% if s.location %}
+                <a href="{% url 'ctrl.location' s.location.pk %}">{{ s.location.name }}</a>
+                {% else %}—{% endif %}
+            </td>
+            <td>
+                {% for c in s.computers.all %}
+                <a href="{% url 'ctrl.computer' c.machine_id %}">{{ c.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% empty %}—{% endfor %}
+            </td>
+            <td>
+                <form method="post" action="{% url 'ctrl.student_delete' s.pk %}"
+                      onsubmit="return confirm('Ištrinti mokinį {{ s.name }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm">Ištrinti</button>
+                </form>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="text-muted">Nėra mokinių</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

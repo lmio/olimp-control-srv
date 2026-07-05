@@ -2,14 +2,14 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Prefetch, Q, Exists, OuterRef
+from django.db.models import Count, Prefetch, Q, Exists, OuterRef
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
-from .models import Location, Computer, UnknownComputer, Task, Ticket, TaskPreset
-from .forms import NewTaskForm, RegisterComputerForm
+from .models import Location, Computer, Student, UnknownComputer, Task, Ticket, TaskPreset
+from .forms import LocationForm, NewTaskForm, RegisterComputerForm, StudentForm
 
 
 def _computer_queryset():
@@ -270,6 +270,77 @@ def register_computer(request, pk):
         "uc": uc,
         "form": form,
     })
+
+
+@login_required
+def student_list(request):
+    students = (
+        Student.objects
+        .select_related("location")
+        .prefetch_related("computers", "computers__location")
+    )
+    return render(request, "ctrl/student_list.html", {"students": students})
+
+
+@login_required
+def student_edit(request, pk=None):
+    student = get_object_or_404(Student, pk=pk) if pk is not None else None
+
+    if request.method == "POST":
+        form = StudentForm(request.POST, instance=student)
+        if form.is_valid():
+            form.save()
+            return redirect("ctrl.student_list")
+    else:
+        form = StudentForm(instance=student)
+
+    return render(request, "ctrl/student_edit.html", {
+        "form": form,
+        "student": student,
+    })
+
+
+@login_required
+def student_delete(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    if request.method == "POST":
+        student.delete()
+    return redirect("ctrl.student_list")
+
+
+@login_required
+def location_list(request):
+    locations = Location.objects.order_by("sequence_num").annotate(
+        computer_count=Count("computer", distinct=True),
+        student_count=Count("students", distinct=True),
+    )
+    return render(request, "ctrl/location_list.html", {"locations": locations})
+
+
+@login_required
+def location_edit(request, pk=None):
+    location = get_object_or_404(Location, pk=pk) if pk is not None else None
+
+    if request.method == "POST":
+        form = LocationForm(request.POST, instance=location)
+        if form.is_valid():
+            form.save()
+            return redirect("ctrl.location_list")
+    else:
+        form = LocationForm(instance=location)
+
+    return render(request, "ctrl/location_edit.html", {
+        "form": form,
+        "location": location,
+    })
+
+
+@login_required
+def location_delete(request, pk):
+    location = get_object_or_404(Location, pk=pk)
+    if request.method == "POST":
+        location.delete()
+    return redirect("ctrl.location_list")
 
 
 class TaskListView(LoginRequiredMixin, generic.ListView):

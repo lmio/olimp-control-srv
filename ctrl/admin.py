@@ -17,6 +17,7 @@ admin.site.register(
         models.Task,
         models.Ticket,
         models.TaskPreset,
+        models.Student,
     )
 )
 admin.site.register(models.CheckIn, CheckInAdmin)
