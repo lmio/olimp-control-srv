@@ -57,11 +57,6 @@ class RegisterComputerForm(forms.Form):
 
 
 class StudentForm(forms.ModelForm):
-    location = forms.ModelChoiceField(
-        label="Klasė",
-        queryset=Location.objects.order_by("sequence_num"),
-        required=False,
-    )
     computers = ComputerMultipleChoiceField(
         label="Kompiuteriai",
         queryset=Computer.objects.order_by(
@@ -76,7 +71,7 @@ class StudentForm(forms.ModelForm):
 
     class Meta:
         model = Student
-        fields = ["name", "cms_username", "location", "computers"]
+        fields = ["name", "cms_username", "computers"]
         labels = {"name": "Vardas Pavardė", "cms_username": "CMS naudotojas"}
 
 

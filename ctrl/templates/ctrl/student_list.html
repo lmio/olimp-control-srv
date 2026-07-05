@@ -23,9 +23,9 @@
             <td><a href="{% url 'ctrl.student_edit' s.pk %}">{{ s.name }}</a></td>
             <td><code>{{ s.cms_username }}</code></td>
             <td>
-                {% if s.location %}
-                <a href="{% url 'ctrl.location' s.location.pk %}">{{ s.location.name }}</a>
-                {% else %}—{% endif %}
+                {% for l in s.locations %}
+                <a href="{% url 'ctrl.location' l.pk %}">{{ l.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% empty %}—{% endfor %}
             </td>
             <td>
                 {% for c in s.computers.all %}

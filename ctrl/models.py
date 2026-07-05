@@ -150,20 +150,25 @@ class Ticket(models.Model):
 
 
 class Student(models.Model):
-    """A contestant. Class/room is a Location; machine mapping is M2M so a
-    student can be moved to a spare machine mid-contest without losing the
-    original assignment."""
+    """A contestant. Students are assigned to computers (M2M, so a student
+    can be moved to a spare machine mid-contest without losing the original
+    assignment); the class follows from the computers' locations."""
 
     name = models.CharField(max_length=128)
     cms_username = models.CharField(max_length=64, unique=True, db_index=True)
-    location = models.ForeignKey(
-        Location, null=True, blank=True, on_delete=models.SET_NULL,
-        related_name="students",
-    )
     computers = models.ManyToManyField(Computer, blank=True, related_name="students")
 
     class Meta:
-        ordering = ["location__sequence_num", "name"]
+        ordering = ["name"]
+
+    @property
+    def locations(self):
+        """Distinct locations of the student's computers."""
+        seen = {}
+        for c in self.computers.all():
+            if c.location is not None:
+                seen[c.location.pk] = c.location
+        return list(seen.values())
 
     def __str__(self):
         return f"{self.name} ({self.cms_username})"

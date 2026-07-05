@@ -274,11 +274,7 @@ def register_computer(request, pk):
 
 @login_required
 def student_list(request):
-    students = (
-        Student.objects
-        .select_related("location")
-        .prefetch_related("computers", "computers__location")
-    )
+    students = Student.objects.prefetch_related("computers", "computers__location")
     return render(request, "ctrl/student_list.html", {"students": students})
 
 
@@ -312,7 +308,7 @@ def student_delete(request, pk):
 def location_list(request):
     locations = Location.objects.order_by("sequence_num").annotate(
         computer_count=Count("computer", distinct=True),
-        student_count=Count("students", distinct=True),
+        student_count=Count("computer__students", distinct=True),
     )
     return render(request, "ctrl/location_list.html", {"locations": locations})
 
