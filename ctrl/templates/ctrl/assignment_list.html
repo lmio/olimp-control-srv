@@ -1,0 +1,47 @@
+{% extends "ctrl/base.html" %}
+
+{% block title %}Priskyrimai - LMIO CTRL{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mokinių ir kompiuterių priskyrimai</h1>
+    <a href="{% url 'ctrl.assignment_new' %}" class="btn btn-primary">Naujas priskyrimas</a>
+</div>
+<p class="text-muted">
+    Norėdami pakeisti mokinio kompiuterį, pirmiausia pašalinkite esamą priskyrimą.
+</p>
+<table>
+    <thead>
+        <tr>
+            <th>Naudotojo ID</th>
+            <th>Kompiuteris</th>
+            <th>Klasė</th>
+            <th>Priskirta</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for assignment in assignments %}
+        <tr>
+            <td><code>{{ assignment.contestant.userid }}</code></td>
+            <td>
+                <a href="{% url 'ctrl.computer' assignment.computer.machine_id %}">
+                    {{ assignment.computer.name }} (<code>{{ assignment.computer.machine_id }}</code>)
+                </a>
+            </td>
+            <td>{{ assignment.computer.location.name|default:"—" }}</td>
+            <td>{{ assignment.assigned_at }}</td>
+            <td>
+                <form method="post" action="{% url 'ctrl.assignment_delete' assignment.pk %}"
+                      onsubmit="return confirm('Pašalinti šį priskyrimą?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm">Pašalinti</button>
+                </form>
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="text-muted">Nėra priskyrimų</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

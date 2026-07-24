@@ -1,0 +1,28 @@
+{% extends "ctrl/base.html" %}
+
+{% block title %}{{ computer.name }} - LMIO CTRL{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Redaguoti kompiuterį {{ computer.name }}</h1>
+</div>
+
+<div class="info-card">
+    <strong>MID:</strong> <code>{{ computer.machine_id }}</code>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<div class="text-muted">{{ field.help_text }}</div>{% endif %}
+        {% if field.errors %}<div class="form-error">{{ field.errors }}</div>{% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Išsaugoti</button>
+    <a href="{% url 'ctrl.computer' computer.machine_id %}" class="btn">Atgal</a>
+</form>
+{% endblock %}

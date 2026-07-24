@@ -1,0 +1,27 @@
+{% extends "ctrl/base.html" %}
+
+{% block title %}Naujas priskyrimas - LMIO CTRL{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Naujas mokinio ir kompiuterio priskyrimas</h1>
+</div>
+<p class="text-muted">
+    Užimto mokinio ar kompiuterio perkelti negalima. Pirmiausia pašalinkite jo esamą priskyrimą.
+</p>
+<form method="post">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {% for field in form %}
+    <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <div style="color: var(--color-error); font-size: 13px;">{{ field.errors }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Priskirti</button>
+    <a href="{% url 'ctrl.assignment_list' %}" class="btn">Atgal</a>
+</form>
+{% endblock %}

@@ -14,6 +14,9 @@
             <a href="{% url 'ctrl.index' %}">Statusas</a>
             <a href="{% url 'ctrl.task_list' %}">Užduotys</a>
             <a href="{% url 'ctrl.create_task' %}">Nauja užduotis</a>
+            <a href="{% url 'ctrl.student_list' %}">Mokiniai</a>
+            <a href="{% url 'ctrl.assignment_list' %}">Priskyrimai</a>
+            <a href="{% url 'ctrl.location_list' %}">Klasės</a>
             <a href="{% url 'ctrl.unknown_computers' %}">Nežinomi</a>
             <a href="{% url 'admin:index' %}">Django admin</a>
             {% if user.is_authenticated %}
@@ -25,6 +28,9 @@
             {% endif %}
         </nav>
         <div class="container">
+            {% for message in messages %}
+            <p class="{% if message.tags %}{{ message.tags }}{% endif %}">{{ message }}</p>
+            {% endfor %}
             {% block content %}
             {% endblock %}
         </div>

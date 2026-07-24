@@ -1,0 +1,61 @@
+{% extends "ctrl/base.html" %}
+
+{% block title %}Mokiniai - LMIO CTRL{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Mokiniai</h1>
+    <a href="{% url 'ctrl.student_new' %}" class="btn btn-primary">Naujas mokinys</a>
+    <a href="{% url 'ctrl.assignment_new' %}" class="btn">Naujas priskyrimas</a>
+</div>
+<table>
+    <thead>
+        <tr>
+            <th>Naudotojo ID</th>
+            <th>Klasė</th>
+            <th>Kompiuteris</th>
+            <th>Priskyrimo būklė</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for s in students %}
+        <tr>
+            <td>
+                <a href="{% url 'ctrl.student_edit' s.pk %}"><code>{{ s.userid }}</code></a>
+            </td>
+            <td>
+                {% for l in s.locations %}
+                <a href="{% url 'ctrl.location' l.pk %}">{{ l.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% empty %}—{% endfor %}
+            </td>
+            <td>
+                {% if s.computer %}
+                <a href="{% url 'ctrl.computer' s.computer.machine_id %}">{{ s.computer.name }}</a>
+                {% else %}—{% endif %}
+            </td>
+            <td>
+                {% if "no_computers" in s.anomaly_codes %}
+                <span class="badge badge-error">nėra kompiuterių</span>
+                {% endif %}
+                {% if "computer_without_class" in s.anomaly_codes %}
+                <span class="badge badge-in-progress">kompiuteris be klasės</span>
+                {% endif %}
+                {% if not s.anomaly_codes %}<span class="badge badge-done">gerai</span>{% endif %}
+            </td>
+            <td>
+                {% if not s.computer %}
+                <form method="post" action="{% url 'ctrl.student_delete' s.pk %}"
+                      onsubmit="return confirm('Ištrinti mokinį {{ s.userid }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm">Ištrinti</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+    {% empty %}
+        <tr><td colspan="5" class="text-muted">Nėra mokinių</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
