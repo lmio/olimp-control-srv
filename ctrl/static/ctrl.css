@@ -393,6 +393,8 @@ pre.empty-output {
     color: var(--color-text);
 }
 .form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
 .form-group textarea,
 .form-group select {
     width: 100%;
@@ -405,11 +407,18 @@ pre.empty-output {
     transition: border-color 0.15s;
 }
 .form-group input[type="text"]:focus,
+.form-group input[type="password"]:focus,
+.form-group input[type="number"]:focus,
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.form-error {
+    color: var(--color-error);
+    font-size: 13px;
+    margin: 4px 0 12px;
 }
 .form-group textarea.mono {
     font-family: var(--font-mono);

@@ -1,51 +1,44 @@
 from django import forms
+from django.db.models import Q
 from django.forms.widgets import Textarea
-from .models import Computer, Location, Student, Task
+
+from .models import (
+    Computer,
+    ContestantComputerAssignment,
+    Location,
+    Student,
+    Task,
+)
 
 
 class ComputerMultipleChoiceField(forms.ModelMultipleChoiceField):
     def label_from_instance(self, obj):
-        if obj.location:
-            location_name = obj.location.name
-        else:
-            location_name = 'Unknown location'
-        return f'{location_name}: {obj.name}'
+        location_name = obj.location.name if obj.location else "Unknown location"
+        return f"{location_name}: {obj.name}"
 
 
 class NewTaskForm(forms.ModelForm):
-    name = forms.CharField(
-        label="Name",
-        required=True
-    )
-    run_as = forms.CharField(
-        label="Execute as",
-        initial="root",
-        required=True
-    )
+    name = forms.CharField(label="Name", required=True)
+    run_as = forms.CharField(label="Execute as", initial="root", required=True)
     computers = ComputerMultipleChoiceField(
         queryset=Computer.objects.order_by(
             "location__sequence_num",
             "location__name",
             "sequence_num",
-            "name"
+            "name",
         ),
         widget=forms.SelectMultiple,
         required=True,
     )
-    payload = forms.CharField(
-        label="Payload",
-        widget=Textarea,
-        required=True
-    )
+    payload = forms.CharField(label="Payload", widget=Textarea, required=True)
 
     def clean_payload(self):
-        data = self.cleaned_data.get('payload', '')
-        normalized_data = data.replace('\r\n', '\n')
-        return normalized_data
+        data = self.cleaned_data.get("payload", "")
+        return data.replace("\r\n", "\n")
 
     class Meta:
         model = Task
-        fields = ['name', 'run_as', 'computers', 'payload']
+        fields = ["name", "run_as", "computers", "payload"]
 
 
 class RegisterComputerForm(forms.Form):
@@ -56,23 +49,74 @@ class RegisterComputerForm(forms.Form):
     )
 
 
+class ComputerEditForm(forms.ModelForm):
+    class Meta:
+        model = Computer
+        fields = ["name", "location", "sequence_num"]
+        labels = {
+            "name": "Pavadinimas",
+            "location": "Klasė",
+            "sequence_num": "Eilės nr.",
+        }
+
+
 class StudentForm(forms.ModelForm):
-    computers = ComputerMultipleChoiceField(
-        label="Kompiuteriai",
+    class Meta:
+        model = Student
+        fields = ["userid"]
+        labels = {"userid": "Naudotojo ID"}
+
+
+class ContestantComputerAssignmentForm(forms.Form):
+    contestant = forms.ModelChoiceField(
+        label="Mokinys",
+        queryset=Student.objects.order_by("userid"),
+    )
+    computer = forms.ModelChoiceField(
+        label="Kompiuteris",
         queryset=Computer.objects.order_by(
             "location__sequence_num",
             "location__name",
             "sequence_num",
-            "name"
+            "name",
+            "machine_id",
         ),
-        widget=forms.SelectMultiple,
-        required=False,
     )
 
-    class Meta:
-        model = Student
-        fields = ["name", "cms_username", "computers"]
-        labels = {"name": "Vardas Pavardė", "cms_username": "CMS naudotojas"}
+    def clean(self):
+        cleaned = super().clean()
+        contestant = cleaned.get("contestant")
+        computer = cleaned.get("computer")
+        if contestant is None or computer is None:
+            return cleaned
+        existing = (
+            ContestantComputerAssignment.objects.select_related(
+                "contestant", "computer"
+            )
+            .filter(Q(contestant=contestant) | Q(computer=computer))
+            .first()
+        )
+        if existing is None:
+            return cleaned
+        if existing.contestant_id == contestant.pk:
+            self.add_error(
+                "contestant",
+                (
+                    f'Mokinys „{contestant.userid}“ jau priskirtas '
+                    f'kompiuteriui „{existing.computer.machine_id}“. '
+                    "Pirmiausia pašalinkite esamą priskyrimą."
+                ),
+            )
+        if existing.computer_id == computer.pk:
+            self.add_error(
+                "computer",
+                (
+                    f'Kompiuteris „{computer.machine_id}“ jau priskirtas '
+                    f'mokiniui „{existing.contestant.userid}“. '
+                    "Pirmiausia pašalinkite esamą priskyrimą."
+                ),
+            )
+        return cleaned
 
 
 class LocationForm(forms.ModelForm):
@@ -84,4 +128,3 @@ class LocationForm(forms.ModelForm):
             "sequence_num": "Eilės nr.",
             "grid_cols": "Tinklelio stulpeliai",
         }
-

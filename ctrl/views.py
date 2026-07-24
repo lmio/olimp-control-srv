@@ -2,19 +2,42 @@ import json
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
 from django.db.models import Count, Prefetch, Q, Exists, OuterRef
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views import generic
 
-from .models import Location, Computer, Student, UnknownComputer, Task, Ticket, TaskPreset
-from .forms import LocationForm, NewTaskForm, RegisterComputerForm, StudentForm
+from .models import (
+    Location,
+    Computer,
+    ContestantComputerAssignment,
+    Student,
+    UnknownComputer,
+    Task,
+    Ticket,
+    TaskPreset,
+)
+from .forms import (
+    ComputerEditForm,
+    ContestantComputerAssignmentForm,
+    LocationForm,
+    NewTaskForm,
+    RegisterComputerForm,
+    StudentForm,
+)
+from .assignments import (
+    AssignmentConflict,
+    assign_contestant_to_computer,
+    remove_contestant_computer_assignment,
+)
 
 
 def _computer_queryset():
     return (
         Computer.objects
+        .select_related("contestant_assignment__contestant")
         .with_online_status()
         .annotate(
             has_in_progress=Exists(
@@ -65,8 +88,15 @@ def index_status_partial(request):
 
 def _split_placed(computers):
     """Split computers into (placed, unplaced) based on grid_row/grid_col."""
-    placed = [c for c in computers if c.grid_row is not None and c.grid_col is not None]
-    unplaced = [c for c in computers if c.grid_row is None or c.grid_col is None]
+    placed = [
+        c
+        for c in computers
+        if isinstance(c.grid_row, int)
+        and isinstance(c.grid_col, int)
+        and c.grid_row > 0
+        and c.grid_col > 0
+    ]
+    unplaced = [c for c in computers if c not in placed]
     return placed, unplaced
 
 
@@ -117,37 +147,108 @@ def location_save_layout(request, pk):
     if request.method != "POST":
         return redirect("ctrl.location_edit_layout", pk=pk)
 
-    location = get_object_or_404(Location, pk=pk)
     try:
         data = json.loads(request.body)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JsonResponse({"error": "Invalid JSON"}, status=400)
+    if not isinstance(data, dict):
+        return JsonResponse({"error": "Layout payload must be an object"}, status=400)
 
     grid_cols = data.get("grid_cols")
-    positions = data.get("positions", [])
-
-    occupied = set()
-    for p in positions:
-        if p.get("row") is not None and p.get("col") is not None:
-            key = (p["row"], p["col"])
-            if key in occupied:
-                return JsonResponse({"error": f"Duplicate position {key}"}, status=400)
-            occupied.add(key)
-
-    computer_ids = [p["id"] for p in positions]
-    computers = {c.pk: c for c in Computer.objects.filter(pk__in=computer_ids, location=location)}
+    if type(grid_cols) is not int or not 1 <= grid_cols <= 30:
+        return JsonResponse(
+            {"error": "grid_cols must be an integer between 1 and 30"},
+            status=400,
+        )
+    positions = data.get("positions")
+    if not isinstance(positions, list):
+        return JsonResponse({"error": "positions must be a list"}, status=400)
 
     with transaction.atomic():
-        if grid_cols is not None:
-            location.grid_cols = grid_cols
-            location.save(update_fields=["grid_cols"])
+        location = get_object_or_404(
+            Location.objects.select_for_update(),
+            pk=pk,
+        )
+        computers = list(
+            Computer.objects.select_for_update()
+            .filter(location=location)
+            .order_by("pk")
+        )
+        expected_ids = {computer.pk for computer in computers}
+        normalized_positions = {}
+        occupied = set()
+        for index, position in enumerate(positions):
+            if not isinstance(position, dict):
+                return JsonResponse(
+                    {"error": f"positions[{index}] must be an object"},
+                    status=400,
+                )
+            computer_id = position.get("id")
+            if type(computer_id) is not int or computer_id <= 0:
+                return JsonResponse(
+                    {"error": f"positions[{index}].id must be a positive integer"},
+                    status=400,
+                )
+            if computer_id in normalized_positions:
+                return JsonResponse(
+                    {"error": f"Duplicate computer id {computer_id}"},
+                    status=400,
+                )
+            row = position.get("row")
+            col = position.get("col")
+            if (row is None) != (col is None):
+                return JsonResponse(
+                    {"error": "row and col must either both be set or both be null"},
+                    status=400,
+                )
+            if row is not None:
+                if (
+                    type(row) is not int
+                    or type(col) is not int
+                    or not 1 <= row <= 30
+                    or not 1 <= col <= grid_cols
+                ):
+                    return JsonResponse(
+                        {
+                            "error": (
+                                "placed rows must be between 1 and 30 and "
+                                "columns must fit grid_cols"
+                            )
+                        },
+                        status=400,
+                    )
+                coordinate = (row, col)
+                if coordinate in occupied:
+                    return JsonResponse(
+                        {"error": f"Duplicate position {coordinate}"},
+                        status=400,
+                    )
+                occupied.add(coordinate)
+            normalized_positions[computer_id] = (row, col)
 
-        for p in positions:
-            comp = computers.get(p["id"])
-            if comp:
-                comp.grid_row = p.get("row")
-                comp.grid_col = p.get("col")
-                comp.save(update_fields=["grid_row", "grid_col"])
+        submitted_ids = set(normalized_positions)
+        if submitted_ids != expected_ids:
+            return JsonResponse(
+                {
+                    "error": "positions must contain every computer in this class exactly once",
+                    "missing_ids": sorted(expected_ids - submitted_ids),
+                    "unknown_ids": sorted(submitted_ids - expected_ids),
+                },
+                status=400,
+            )
+
+        location.grid_cols = grid_cols
+        location.save(update_fields=["grid_cols"])
+        # The database enforces unique occupied cells immediately. Clear the
+        # locked class rows first so a valid swap cannot collide with the old
+        # coordinates while the final state is being written.
+        Computer.objects.filter(pk__in=expected_ids).update(
+            grid_row=None,
+            grid_col=None,
+        )
+        for computer in computers:
+            computer.grid_row, computer.grid_col = normalized_positions[computer.pk]
+        Computer.objects.bulk_update(computers, ["grid_row", "grid_col"])
 
     return JsonResponse({"ok": True})
 
@@ -164,6 +265,29 @@ def computer(request, machine_id):
         "tickets": tickets,
     }
     return render(request, "ctrl/computer.html", context)
+
+
+@login_required
+def computer_edit(request, machine_id):
+    computer = get_object_or_404(Computer, machine_id=machine_id)
+    original_location_id = computer.location_id
+    if request.method == "POST":
+        form = ComputerEditForm(request.POST, instance=computer)
+        if form.is_valid():
+            with transaction.atomic():
+                updated = form.save(commit=False)
+                if updated.location_id != original_location_id:
+                    updated.grid_row = None
+                    updated.grid_col = None
+                updated.save()
+            return redirect("ctrl.computer", machine_id=computer.machine_id)
+    else:
+        form = ComputerEditForm(instance=computer)
+    return render(
+        request,
+        "ctrl/computer_edit.html",
+        {"computer": computer, "form": form},
+    )
 
 
 def _get_task_context(pk):
@@ -274,7 +398,13 @@ def register_computer(request, pk):
 
 @login_required
 def student_list(request):
-    students = Student.objects.prefetch_related("computers", "computers__location")
+    students = list(
+        Student.objects.select_related(
+            "computer_assignment__computer__location"
+        )
+    )
+    for student in students:
+        student.anomaly_codes = student.assignment_anomalies
     return render(request, "ctrl/student_list.html", {"students": students})
 
 
@@ -300,15 +430,77 @@ def student_edit(request, pk=None):
 def student_delete(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if request.method == "POST":
+        if student.computer is not None:
+            messages.error(
+                request,
+                "Pirmiausia pašalinkite mokinio kompiuterio priskyrimą.",
+            )
+            return redirect("ctrl.student_list")
         student.delete()
     return redirect("ctrl.student_list")
+
+
+@login_required
+def assignment_list(request):
+    assignments = (
+        ContestantComputerAssignment.objects.select_related(
+            "contestant", "computer", "computer__location"
+        )
+        .order_by("contestant__userid")
+    )
+    return render(
+        request,
+        "ctrl/assignment_list.html",
+        {"assignments": assignments},
+    )
+
+
+@login_required
+def assignment_new(request):
+    if request.method == "POST":
+        form = ContestantComputerAssignmentForm(request.POST)
+        if form.is_valid():
+            try:
+                assign_contestant_to_computer(
+                    contestant=form.cleaned_data["contestant"],
+                    computer=form.cleaned_data["computer"],
+                    source="management_ui",
+                    actor_identifier=request.user.get_username(),
+                )
+            except AssignmentConflict as error:
+                form.add_error(None, str(error))
+            else:
+                return redirect("ctrl.assignment_list")
+    else:
+        form = ContestantComputerAssignmentForm()
+    return render(request, "ctrl/assignment_edit.html", {"form": form})
+
+
+@login_required
+def assignment_delete(request, pk):
+    assignment = get_object_or_404(
+        ContestantComputerAssignment.objects.select_related(
+            "contestant", "computer"
+        ),
+        pk=pk,
+    )
+    if request.method == "POST":
+        remove_contestant_computer_assignment(
+            assignment=assignment,
+            source="management_ui",
+            actor_identifier=request.user.get_username(),
+        )
+    return redirect("ctrl.assignment_list")
 
 
 @login_required
 def location_list(request):
     locations = Location.objects.order_by("sequence_num").annotate(
         computer_count=Count("computer", distinct=True),
-        student_count=Count("computer__students", distinct=True),
+        student_count=Count(
+            "computer__contestant_assignment__contestant",
+            distinct=True,
+        ),
     )
     return render(request, "ctrl/location_list.html", {"locations": locations})
 

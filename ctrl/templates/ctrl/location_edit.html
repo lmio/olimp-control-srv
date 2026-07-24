@@ -7,6 +7,12 @@
     <h1>{% if location %}Redaguoti klasę{% else %}Nauja klasė{% endif %}</h1>
 </div>
 
+{% if location %}
+<div class="info-card">
+    <strong>Pastovus ID:</strong> <code>{{ location.public_id }}</code>
+</div>
+{% endif %}
+
 <form method="post">
     {% csrf_token %}
     {% for field in form %}

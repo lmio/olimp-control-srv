@@ -35,6 +35,36 @@ def get_env_or_crash_in_prod(key, default_in_dev=""):
 
 CTRL_SECRET_KEY = get_env_or_crash_in_prod("CTRL_SECRET_KEY", default_in_dev=DEFAULT_SECRET_KEY)
 CTRL_AUTH_KEY = get_env_or_crash_in_prod("CTRL_AUTH_KEY", default_in_dev='abcde')
+CTRL_TOILET_AUTH_KEY = get_env_or_crash_in_prod(
+    "CTRL_TOILET_AUTH_KEY", default_in_dev="toilet-dev-key"
+)
+
+
+def validate_service_keys(production, machine_key, toilet_key):
+    if not production:
+        return
+    if toilet_key == machine_key:
+        raise ValueError("CTRL_TOILET_AUTH_KEY must differ from CTRL_AUTH_KEY")
+    insecure_placeholders = {
+        "abcde",
+        "toilet-dev-key",
+        "very_secret_olimp-control.py_key",
+        "a_different_very_secret_toilet_service_key",
+    }
+    for setting_name, value in (
+        ("CTRL_AUTH_KEY", machine_key),
+        ("CTRL_TOILET_AUTH_KEY", toilet_key),
+    ):
+        if len(value.encode("utf-8")) < 32:
+            raise ValueError(f"{setting_name} must contain at least 32 UTF-8 bytes")
+        if value in insecure_placeholders:
+            raise ValueError(f"{setting_name} must not use a sample or development key")
+
+
+validate_service_keys(CTRL_PRODUCTION, CTRL_AUTH_KEY, CTRL_TOILET_AUTH_KEY)
+CTRL_TOILET_AUTH_MAX_SKEW_SECONDS = int(
+    os.environ.get("CTRL_TOILET_AUTH_MAX_SKEW_SECONDS", "60")
+)
 CTRL_STATIC_ROOT = os.environ.get("CTRL_STATIC_ROOT")
 CTRL_DB_HOST = get_env_or_crash_in_prod("CTRL_DB_HOST")
 CTRL_DB_PORT = os.environ.get("CTRL_DB_PORT", default="5432")
@@ -44,7 +74,18 @@ CTRL_DB_NAME = os.environ.get("CTRL_DB_NAME", default="postgres")
 
 DEBUG = not CTRL_PRODUCTION
 SECRET_KEY = CTRL_SECRET_KEY
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+
+def _csv_setting(name, default=""):
+    return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
+
+
+ALLOWED_HOSTS = _csv_setting("CTRL_ALLOWED_HOSTS", "127.0.0.1,localhost")
+if CTRL_PRODUCTION and not os.environ.get("CTRL_ALLOWED_HOSTS"):
+    raise KeyError("Expected environment variable `CTRL_ALLOWED_HOSTS` to be set in production")
+CSRF_TRUSTED_ORIGINS = _csv_setting("CTRL_CSRF_TRUSTED_ORIGINS")
+if os.environ.get("CTRL_TRUST_X_FORWARDED_PROTO", "").lower() in {"1", "true", "yes"}:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 
@@ -57,6 +98,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'constance',
+    'import_export',
 ]
 
 MIDDLEWARE = [
@@ -204,6 +246,11 @@ DATE_FORMAT = "Y-m-d"
 DATETIME_FORMAT = "Y-m-d H:i:s"
 SHORT_DATE_FORMAT = "Y-m-d"
 SHORT_DATETIME_FORMAT = "Y-m-d H:i:s"
+
+# django-import-export is intentionally exposed only by the two admin classes
+# that provision contestants and their current computer mappings.
+IMPORT_EXPORT_IMPORT_PERMISSION_CODE = "add"
+IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 # constance config
 CONSTANCE_BACKEND = 'constance.backends.database.DatabaseBackend'
