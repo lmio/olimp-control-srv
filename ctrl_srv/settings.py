@@ -80,9 +80,7 @@ def _csv_setting(name, default=""):
     return [item.strip() for item in os.environ.get(name, default).split(",") if item.strip()]
 
 
-ALLOWED_HOSTS = _csv_setting("CTRL_ALLOWED_HOSTS", "127.0.0.1,localhost")
-if CTRL_PRODUCTION and not os.environ.get("CTRL_ALLOWED_HOSTS"):
-    raise KeyError("Expected environment variable `CTRL_ALLOWED_HOSTS` to be set in production")
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 CSRF_TRUSTED_ORIGINS = _csv_setting("CTRL_CSRF_TRUSTED_ORIGINS")
 if os.environ.get("CTRL_TRUST_X_FORWARDED_PROTO", "").lower() in {"1", "true", "yes"}:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
